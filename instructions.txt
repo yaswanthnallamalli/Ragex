@@ -1,0 +1,11 @@
+open vs code 
+
+connect with wsl : Ctrl+Shift+P -> Remote-WSL: New Window -> select and open project folder over here -> uname -a
+(for checking in Linux or not) 
+
+In terminal -> wsl (shifts to Linux server)
+
+cd /mnt/f/sem-8/rag
+source renv/bin/activate
+
+PYTHONPATH=. python models/load_model.py
