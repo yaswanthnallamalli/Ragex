@@ -1,71 +1,42 @@
+# models/load_model.py
 import os
 import sys
-import torch
-import logging
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, BitsAndBytesConfig
 from config.config import HUGGINGFACE_TOKEN, MISTRAL_LOCAL_PATH
 
-# Add project root to sys.path
+# Add parent directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# Setup logger
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Cached pipeline
+model_pipeline = None
 
-# Global variables to cache the model and tokenizer after loading once
-_cached_model = None
-_cached_tokenizer = None
-
-def check_cuda_availability():
-    """Checks and logs whether CUDA is available."""
-    if torch.cuda.is_available():
-        logger.info("🔋 CUDA is available. Using GPU for inference.")
-    else:
-        logger.warning("⚠️ CUDA not available. Falling back to CPU.")
-
-def load_mistral_model(model_path=None):
-    """Loads the Mistral model and tokenizer from the local path using 4-bit quantization. Caches them for reuse."""
-    global _cached_model, _cached_tokenizer
-
-    model_path = os.path.abspath(model_path or MISTRAL_LOCAL_PATH)
-
-    # Return cached model and tokenizer if already loaded
-    if _cached_model is not None and _cached_tokenizer is not None:
-        logger.info("🔁 Returning cached Mistral model and tokenizer.")
-        return _cached_tokenizer, _cached_model
-
-    logger.info(f"🔍 Attempting to load Mistral model from: {model_path}")
-
-    try:
-        # Use 4-bit quantization for optimized performance
+def load_mistral_pipeline():
+    """
+    Loads and caches the Mistral text-generation pipeline (4-bit quant).
+    """
+    global model_pipeline
+    if model_pipeline is None:
         quant_config = BitsAndBytesConfig(load_in_4bit=True)
 
         tokenizer = AutoTokenizer.from_pretrained(
-            model_path,
+            MISTRAL_LOCAL_PATH,
             token=HUGGINGFACE_TOKEN,
+            cache_dir=MISTRAL_LOCAL_PATH,
             local_files_only=True
         )
 
         model = AutoModelForCausalLM.from_pretrained(
-            model_path,
+            MISTRAL_LOCAL_PATH,
+            device_map="auto",
             token=HUGGINGFACE_TOKEN,
-            local_files_only=True,
-            device_map="auto",  # Use GPU if available
+            trust_remote_code=True,
             quantization_config=quant_config,
-            trust_remote_code=True
+            cache_dir=MISTRAL_LOCAL_PATH,
+            local_files_only=True
         )
 
-        # Cache the loaded model and tokenizer
-        _cached_model = model
-        _cached_tokenizer = tokenizer
-
-        logger.info(f"✅ Mistral model loaded successfully from: {model_path}")
-        return tokenizer, model
-
-    except Exception as e:
-        logger.error(f"❌ Failed to load model or tokenizer.\n{e}")
-        raise
-
-if __name__ == "__main__":
-    check_cuda_availability()
-    load_mistral_model()
+        model_pipeline = pipeline("text-generation", model=model, tokenizer=tokenizer)
+        print("✅ Mistral model pipeline loaded and cached.")
+    else:
+        print("♻️ Reusing cached Mistral model pipeline.")
+    return model_pipeline
