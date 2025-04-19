@@ -1,0 +1,143 @@
+### Input: Get total revenue in 2023
+### SQL: SELECT SUM(revenue) FROM excel_data WHERE year = 2023;
+
+### Input: List all cities with more than 100 incidents
+### SQL: SELECT city FROM excel_data WHERE incidents > 100;
+
+### Input: Show number of incidents in Hyderabad
+### SQL: SELECT COUNT(*) FROM excel_data WHERE city = 'Hyderabad';
+
+### Input: Find total cost where priority is High
+### SQL: SELECT SUM(cost) FROM excel_data WHERE priority = 'High';
+
+### Input: List all distinct categories
+### SQL: SELECT DISTINCT category FROM excel_data;
+
+### Input: Count rows where application is impacted
+### SQL: SELECT COUNT(*) FROM excel_data WHERE applications_impacted IS NOT NULL;
+
+### Input: List incidents after 2022
+### SQL: SELECT * FROM excel_data WHERE year > 2022;
+
+### Input: Count incidents for each city
+### SQL: SELECT city, COUNT(*) FROM excel_data GROUP BY city;
+
+### Input: Show top 5 incidents by cost
+### SQL: SELECT * FROM excel_data ORDER BY cost DESC LIMIT 5;
+
+### Input: Get average resolution time
+### SQL: SELECT AVG(resolution_time) FROM excel_data;
+
+### Input: Show incidents where service is 'Email'
+### SQL: SELECT * FROM excel_data WHERE service = 'Email';
+
+### Input: Find incident count by priority
+### SQL: SELECT priority, COUNT(*) FROM excel_data GROUP BY priority;
+
+### Input: Get earliest incident date
+### SQL: SELECT MIN(incident_date) FROM excel_data;
+
+### Input: Find incidents in Mumbai in 2021
+### SQL: SELECT * FROM excel_data WHERE city = 'Mumbai' AND year = 2021;
+
+### Input: Total incidents with major impact
+### SQL: SELECT COUNT(*) FROM excel_data WHERE impact = 'Major';
+
+### Input: Number of open incidents
+### SQL: SELECT COUNT(*) FROM excel_data WHERE status = 'Open';
+
+### Input: Get latest 3 incidents
+### SQL: SELECT * FROM excel_data ORDER BY incident_date DESC LIMIT 3;
+
+### Input: Find all unique states
+### SQL: SELECT DISTINCT state FROM excel_data;
+
+### Input: Count of incidents by category
+### SQL: SELECT category, COUNT(*) FROM excel_data GROUP BY category;
+
+### Input: Show total downtime in hours
+### SQL: SELECT SUM(downtime_hours) FROM excel_data;
+
+### Input: Show high priority unresolved incidents
+### SQL: SELECT * FROM excel_data WHERE priority = 'High' AND status != 'Resolved';
+
+### Input: Find max cost by city
+### SQL: SELECT city, MAX(cost) FROM excel_data GROUP BY city;
+
+### Input: Count incidents with null description
+### SQL: SELECT COUNT(*) FROM excel_data WHERE description IS NULL;
+
+### Input: List all incidents from Bangalore in Q1 2023
+### SQL: SELECT * FROM excel_data WHERE city = 'Bangalore' AND year = 2023 AND month IN (1, 2, 3);
+
+### Input: Show total impact hours by service
+### SQL: SELECT service, SUM(impact_hours) FROM excel_data GROUP BY service;
+
+### Input: Find average cost for critical priority
+### SQL: SELECT AVG(cost) FROM excel_data WHERE priority = 'Critical';
+
+### Input: Total records
+### SQL: SELECT COUNT(*) FROM excel_data;
+
+### Input: All records from 2020 to 2023
+### SQL: SELECT * FROM excel_data WHERE year BETWEEN 2020 AND 2023;
+
+### Input: Cities with more than 10 major incidents
+### SQL: SELECT city FROM excel_data WHERE impact = 'Major' GROUP BY city HAVING COUNT(*) > 10;
+
+### Input: Service-wise incident count
+### SQL: SELECT service, COUNT(*) FROM excel_data GROUP BY service;
+
+### Input: Get rows where root cause is empty
+### SQL: SELECT * FROM excel_data WHERE root_cause IS NULL;
+
+### Input: List resolved incidents in Pune
+### SQL: SELECT * FROM excel_data WHERE city = 'Pune' AND status = 'Resolved';
+
+### Input: Count of low priority incidents in 2023
+### SQL: SELECT COUNT(*) FROM excel_data WHERE priority = 'Low' AND year = 2023;
+
+### Input: Average incident duration in days
+### SQL: SELECT AVG(duration_days) FROM excel_data;
+
+### Input: Categories with more than 50 incidents
+### SQL: SELECT category FROM excel_data GROUP BY category HAVING COUNT(*) > 50;
+
+### Input: Top 10 costly incidents
+### SQL: SELECT * FROM excel_data ORDER BY cost DESC LIMIT 10;
+
+### Input: Sum of downtime for Email service
+### SQL: SELECT SUM(downtime_hours) FROM excel_data WHERE service = 'Email';
+
+### Input: Find costliest incident in Delhi
+### SQL: SELECT * FROM excel_data WHERE city = 'Delhi' ORDER BY cost DESC LIMIT 1;
+
+### Input: List of incident IDs from 2022
+### SQL: SELECT incident_id FROM excel_data WHERE year = 2022;
+
+### Input: City-wise average resolution time
+### SQL: SELECT city, AVG(resolution_time) FROM excel_data GROUP BY city;
+
+### Input: Top 3 cities with most incidents
+### SQL: SELECT city, COUNT(*) AS cnt FROM excel_data GROUP BY city ORDER BY cnt DESC LIMIT 3;
+
+### Input: Total applications impacted in Chennai
+### SQL: SELECT COUNT(DISTINCT applications_impacted) FROM excel_data WHERE city = 'Chennai';
+
+### Input: Incidents with both Email and VPN affected
+### SQL: SELECT * FROM excel_data WHERE applications_impacted LIKE '%Email%' AND applications_impacted LIKE '%VPN%';
+
+### Input: All incidents before 2020
+### SQL: SELECT * FROM excel_data WHERE year < 2020;
+
+### Input: Resolved incidents per month in 2023
+### SQL: SELECT month, COUNT(*) FROM excel_data WHERE status = 'Resolved' AND year = 2023 GROUP BY month;
+
+### Input: Most common root cause
+### SQL: SELECT root_cause, COUNT(*) AS cnt FROM excel_data GROUP BY root_cause ORDER BY cnt DESC LIMIT 1;
+
+### Input: Impact hours in July 2023
+### SQL: SELECT SUM(impact_hours) FROM excel_data WHERE year = 2023 AND month = 7;
+
+### Input: Count by service and priority
+### SQL: SELECT service, priority, COUNT(*) FROM excel_data GROUP BY service, priority;

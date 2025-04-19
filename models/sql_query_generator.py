@@ -9,63 +9,90 @@ from models.load_model import load_mistral_model
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+def map_dtype(dtype) -> str:
+    """Map pandas dtypes to general SQL-friendly types."""
+    dtype = str(dtype)
+    if 'int' in dtype:
+        return 'integer'
+    elif 'float' in dtype:
+        return 'float'
+    elif 'bool' in dtype:
+        return 'boolean'
+    elif 'datetime' in dtype:
+        return 'timestamp'
+    else:
+        return 'text'
+
+
 def generate_sql_prompt(user_question: str, df: pd.DataFrame, table_name: str = "excel_data") -> str:
     """
-    Generates a SQL-style prompt from user question and table schema for LLM input.
-
-    Args:
-        user_question (str): User's natural language query.
-        df (pd.DataFrame): The data schema used for SQL context.
-        table_name (str): Name of the SQL table (default: excel_data).
-
-    Returns:
-        str: Formatted prompt with schema and few-shot examples.
+    Generate a prompt including table schema and few-shot examples.
     """
-    schema_lines = [f"- {col} ({str(dtype)})" for col, dtype in df.dtypes.items()]
+    # Prepare schema
+    schema_lines = [f"{col}: {map_dtype(dtype)}" for col, dtype in df.dtypes.items()]
     schema_str = "\n".join(schema_lines)
 
+    try:
+        # Load few-shot examples from file in same folder
+        with open("/mnt/f/sem-8/rag/models/few_shot_examples.txt", "r") as f:
+            few_shot_examples = f.read().strip()
+    except FileNotFoundError:
+        logger.error("❌ few_shot_examples.txt file not found.")
+        few_shot_examples = ""
+
+    # Replace default placeholder table name with actual one
+    few_shot_examples = few_shot_examples.replace("excel_data", table_name)
+
+    # Final Prompt
     prompt = f"""
-You are a helpful assistant that converts natural language to SQL queries.
+You are a helpful assistant that converts natural language questions to SQL queries.
 
 Table: {table_name}
-Columns:
+Schema:
 {schema_str}
 
-### Input: Get total revenue in 2023
-### SQL: SELECT SUM(revenue) FROM {table_name} WHERE year = 2023;
-
-### Input: List all cities with more than 100 incidents
-### SQL: SELECT city FROM {table_name} WHERE incidents > 100;
+{few_shot_examples}
 
 ### Input: {user_question}
 ### SQL:
-"""
-    return prompt.strip()
+""".strip()
+
+    return prompt
 
 
-def generate_sql_from_mistral(prompt: str) -> str:
+def generate_sql_from_mistral(prompt: str, model_path: str = None) -> str:
     """
-    Generates SQL query from natural language prompt using Mistral LLM.
-
-    Args:
-        prompt (str): The input prompt including schema and user query.
-
-    Returns:
-        str: SQL query string.
+    Uses Mistral model to generate SQL from the prompt.
     """
-    tokenizer, model = load_mistral_model()
-
+    tokenizer, model = load_mistral_model(model_path) if model_path else load_mistral_model()
     generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
     logger.info("🚀 Generating SQL from prompt...")
-    output = generator(prompt, max_new_tokens=150, do_sample=True, top_p=0.9)[0]["generated_text"]
+    output = generator(
+        prompt,
+        max_new_tokens=100,
+        do_sample=False,
+        temperature=0.0,
+        pad_token_id=tokenizer.eos_token_id,
+    )[0]["generated_text"]
 
     sql_start = output.rfind("### SQL:")
     if sql_start != -1:
-        sql_query = output[sql_start + len("### SQL:"):].strip()
+        sql_chunk = output[sql_start + len("### SQL:"):].strip()
+        sql_query = sql_chunk.split("###")[0].strip()
         logger.info(f"✅ Generated SQL: {sql_query}")
     else:
         logger.error("❌ Could not extract SQL from model output.")
         sql_query = ""
 
     return sql_query
+
+
+# Optional: Fine-tuning support (skeleton)
+def fine_tune_sql_model(training_data_path: str, model_save_path: str):
+    """
+    This function is a placeholder if you want to fine-tune the model on your SQL examples.
+    You'd use Hugging Face's Trainer API with DPO/SFT etc.
+    """
+    raise NotImplementedError("This function is a placeholder for future fine-tuning.")

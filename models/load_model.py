@@ -1,5 +1,3 @@
-# rag/models/load_model.py
-
 import os
 import sys
 import torch
@@ -14,6 +12,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Global variables to cache the model and tokenizer after loading once
+_cached_model = None
+_cached_tokenizer = None
+
 def check_cuda_availability():
     """Checks and logs whether CUDA is available."""
     if torch.cuda.is_available():
@@ -21,15 +23,17 @@ def check_cuda_availability():
     else:
         logger.warning("⚠️ CUDA not available. Falling back to CPU.")
 
-def load_mistral_model():
-    """
-    Loads the Mistral model and tokenizer from the local path using 4-bit quantization.
-    
-    Returns:
-        tokenizer: The loaded tokenizer.
-        model: The loaded Mistral model.
-    """
-    model_path = os.path.abspath(MISTRAL_LOCAL_PATH)
+def load_mistral_model(model_path=None):
+    """Loads the Mistral model and tokenizer from the local path using 4-bit quantization. Caches them for reuse."""
+    global _cached_model, _cached_tokenizer
+
+    model_path = os.path.abspath(model_path or MISTRAL_LOCAL_PATH)
+
+    # Return cached model and tokenizer if already loaded
+    if _cached_model is not None and _cached_tokenizer is not None:
+        logger.info("🔁 Returning cached Mistral model and tokenizer.")
+        return _cached_tokenizer, _cached_model
+
     logger.info(f"🔍 Attempting to load Mistral model from: {model_path}")
 
     try:
@@ -50,6 +54,10 @@ def load_mistral_model():
             quantization_config=quant_config,
             trust_remote_code=True
         )
+
+        # Cache the loaded model and tokenizer
+        _cached_model = model
+        _cached_tokenizer = tokenizer
 
         logger.info(f"✅ Mistral model loaded successfully from: {model_path}")
         return tokenizer, model
