@@ -1,4 +1,4 @@
-
+# rag/vector_store/sqlite_loader.py
 import pandas as pd
 import sqlite3
 import os
