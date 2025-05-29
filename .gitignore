@@ -10,3 +10,4 @@ backend/eda_analysis/eenv/
 backend/eda_analysis/data/
 backend/flask_app/fenv/
 frontend/node_modules/
+data/
