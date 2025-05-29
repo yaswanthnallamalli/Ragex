@@ -1,0 +1,9 @@
+.text-white {
+    color: white;
+}
+.center-button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 35vh; /* Adjust this value as needed */
+}

@@ -27,8 +27,25 @@ def search_similar_rows(query, k=5):
 def generate_rag_answer(query: str):
     context_chunks = search_similar_rows(query)
     context = "\n".join(context_chunks)
+    
     prompt = f"""Answer the question based on the following context:\n\n{context}\n\nQuestion: {query}\nAnswer:"""
-    return llm(prompt)
+    
+    response = llm(prompt, max_new_tokens=150)[0]["generated_text"]
+
+    # Extract only the text after "Answer:"
+    if "Answer:" in response:
+        answer_text = response.split("Answer:")[-1].strip()
+    else:
+        answer_text = response.strip()
+
+    # Limit to 150 words
+    answer_words = answer_text.split()
+    if len(answer_words) > 150:
+        answer_text = " ".join(answer_words[:150]) + "..."
+    print("🔎 Raw LLM output:\n", response)
+
+
+    return answer_text
 
 # Local testing loop
 if __name__ == "__main__":

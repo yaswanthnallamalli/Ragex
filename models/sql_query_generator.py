@@ -1,98 +1,65 @@
-# rag/models/sql_query_generator.py
+# models/sql_query_generator.py
 
-import pandas as pd
 import logging
-from transformers import pipeline
-from models.load_model import load_mistral_model
+import sqlite3
+from pathlib import Path
 
-# Setup logger
+from models.utils.column_matcher import match_columns_in_sql
+from models.load_model import load_mistral_pipeline
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+DB_PATH = "vector_store/excel_db.sqlite"
+TABLE_NAME = "excel_data"
+FEW_SHOT_FILE = "models/few_shot_examples.txt"
 
-def map_dtype(dtype) -> str:
-    """Map pandas dtypes to general SQL-friendly types."""
-    dtype = str(dtype)
-    if 'int' in dtype:
-        return 'integer'
-    elif 'float' in dtype:
-        return 'float'
-    elif 'bool' in dtype:
-        return 'boolean'
-    elif 'datetime' in dtype:
-        return 'timestamp'
-    else:
-        return 'text'
+def get_db_schema():
+    """Retrieve schema from the SQLite DB."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(f"PRAGMA table_info({TABLE_NAME});")
+    columns = cursor.fetchall()
+    conn.close()
+    schema_lines = [f"{col[1]}: {col[2]}" for col in columns]
+    schema = "\n".join(schema_lines)
+    return schema
 
+def load_few_shot_examples():
+    """Load few-shot examples from text file."""
+    path = Path(FEW_SHOT_FILE)
+    if not path.exists():
+        logger.warning(f"{FEW_SHOT_FILE} not found!")
+        return ""
+    return path.read_text()
 
-def generate_sql_prompt(user_question: str, df: pd.DataFrame, table_name: str = "excel_data") -> str:
-    """
-    Generate a prompt including table schema and few-shot examples.
-    """
-    # Prepare schema
-    schema_lines = [f"{col}: {map_dtype(dtype)}" for col, dtype in df.dtypes.items()]
-    schema_str = "\n".join(schema_lines)
+def generate_sql_prompt(user_query: str) -> str:
+    logger.info("📜 Generating SQL prompt...")
+    schema = get_db_schema()
+    few_shots = load_few_shot_examples()
 
-    try:
-        # Load few-shot examples from file in same folder
-        with open("/mnt/f/sem-8/rag/models/few_shot_examples.txt", "r") as f:
-            few_shot_examples = f.read().strip()
-    except FileNotFoundError:
-        logger.error("❌ few_shot_examples.txt file not found.")
-        few_shot_examples = ""
+    prompt = f"""You are a helpful assistant that converts natural language questions to SQL queries.
 
-    # Replace default placeholder table name with actual one
-    few_shot_examples = few_shot_examples.replace("excel_data", table_name)
-
-    # Final Prompt
-    prompt = f"""
-You are a helpful assistant that converts natural language questions to SQL queries.
-
-Table: {table_name}
+Table: {TABLE_NAME}
 Schema:
-{schema_str}
+{schema}
 
-{few_shot_examples}
-
-### Input: {user_question}
-### SQL:
-""".strip()
-
+{few_shots}
+### Input: {user_query}
+### SQL:"""
     return prompt
 
-
-def generate_sql_from_mistral(prompt: str, model_path: str = None) -> str:
-    """
-    Uses Mistral model to generate SQL from the prompt.
-    """
-    tokenizer, model = load_mistral_model(model_path) if model_path else load_mistral_model()
-    generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
-
+def generate_sql_from_mistral(prompt: str) -> str:
     logger.info("🚀 Generating SQL from prompt...")
-    output = generator(
-        prompt,
-        max_new_tokens=100,
-        do_sample=False,
-        temperature=0.0,
-        pad_token_id=tokenizer.eos_token_id,
-    )[0]["generated_text"]
+    model = load_mistral_pipeline()
+    raw_sql = model(prompt, max_new_tokens=256)[0]["generated_text"]
+    
+    # Postprocess: strip prompt prefix from generated output
+    generated_sql = raw_sql.split("### SQL:")[-1].strip().split("\n")[0]
 
-    sql_start = output.rfind("### SQL:")
-    if sql_start != -1:
-        sql_chunk = output[sql_start + len("### SQL:"):].strip()
-        sql_query = sql_chunk.split("###")[0].strip()
-        logger.info(f"✅ Generated SQL: {sql_query}")
-    else:
-        logger.error("❌ Could not extract SQL from model output.")
-        sql_query = ""
+    # Schema match correction
+    schema = get_db_schema()
+    fixed_sql = match_columns_in_sql(generated_sql, schema)
 
-    return sql_query
-
-
-# Optional: Fine-tuning support (skeleton)
-def fine_tune_sql_model(training_data_path: str, model_save_path: str):
-    """
-    This function is a placeholder if you want to fine-tune the model on your SQL examples.
-    You'd use Hugging Face's Trainer API with DPO/SFT etc.
-    """
-    raise NotImplementedError("This function is a placeholder for future fine-tuning.")
+    logger.info(f"✅ Generated SQL: {fixed_sql}")
+    return fixed_sql

@@ -141,3 +141,12 @@
 
 ### Input: Count by service and priority
 ### SQL: SELECT service, priority, COUNT(*) FROM excel_data GROUP BY service, priority;
+
+### Input: List all high priority incidents from 2023
+### SQL: SELECT * FROM excel_data WHERE dv_priority = 'High' AND year = 2023;
+
+### Input: Count of low priority incidents in 2022
+### SQL: SELECT COUNT(*) FROM excel_data WHERE dv_priority = 'Low' AND year = 2022;
+
+### Input: Show all incidents in 2021 from dv_company 'ABC Corp'
+### SQL: SELECT * FROM excel_data WHERE year = 2021 AND dv_company = 'ABC Corp';

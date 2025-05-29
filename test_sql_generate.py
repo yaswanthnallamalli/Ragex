@@ -1,13 +1,20 @@
+# test_sql_generate.py
+
 from models.sql_query_generator import generate_sql_prompt, generate_sql_from_mistral
-import pandas as pd
 
-df = pd.read_csv("data/incident_data.csv", encoding="latin1")
-query = "List all incidents in Hyderabad in 2023"
+# Natural language query
+query = "Show all high priority incidents from the year 2023."
 
-prompt = generate_sql_prompt(query, df)
+# Generate prompt using schema and few-shot examples
+prompt = generate_sql_prompt(query)
 
-# Use full path to Mistral snapshot
-model_path = "models/huggingface/hub/models--mistralai--Mistral-7B-Instruct-v0.2/snapshots/3ad372fc79158a2148299e3318516c786aeded6c"
+# Print the generated prompt (optional, for debugging)
+print("📜 Generated Prompt:")
+print(prompt)
 
-sql = generate_sql_from_mistral(prompt, model_path)
+# Generate SQL using Mistral
+sql = generate_sql_from_mistral(prompt)
+
+# Print the generated SQL
+print("\n✅ Generated SQL:")
 print(sql)

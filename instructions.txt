@@ -8,4 +8,14 @@ In terminal -> wsl (shifts to Linux server)
 cd /mnt/f/sem-8/rag
 source renv/bin/activate
 
+source fenv/bin/activate
+python app.py
+
+source eenv/bin/activate
+python -m streamlit edastream.py
+
 PYTHONPATH=. python models/load_model.py
+
+rm -rf vector_store/lancedb/excel_embeddings.lance 
+
+PYTHONPATH=. chainlit run chainlit_app/app.py --watch
